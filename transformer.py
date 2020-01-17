@@ -1,9 +1,9 @@
 import random, os, sys
 import numpy as np
-from keras.models import *
-from keras.layers import *
-from keras.callbacks import *
-from keras.initializers import *
+from tensorflow.keras.models import *
+from tensorflow.keras.layers import *
+from tensorflow.keras.callbacks import *
+from tensorflow.keras.initializers import *
 import tensorflow as tf
 
 try:
@@ -236,7 +236,7 @@ class ReadoutDecoderCell(Layer):
 		enc_output, enc_mask = constants
 
 		time = K.max(tgt_pos_input)
-		col_mask = K.cast(K.equal(K.cumsum(K.ones_like(dec_mask), axis=1), time), dtype='int32')
+		col_mask = K.cast(K.equal(K.cumsum(K.ones_like(dec_mask), axis=1), time), dtype='float32')
 		dec_mask = dec_mask + col_mask
 
 		tgt_emb = self.o_word_emb(tgt_curr_input)
