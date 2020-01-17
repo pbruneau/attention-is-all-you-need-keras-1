@@ -1,9 +1,9 @@
 import random, os, sys
 import numpy as np
-from tensorflow.keras.models import *
-from tensorflow.keras.layers import *
-from tensorflow.keras.callbacks import *
-from tensorflow.keras.initializers import *
+from keras.models import *
+from keras.layers import *
+from keras.callbacks import *
+from keras.initializers import *
 import tensorflow as tf
 
 try:
@@ -458,9 +458,9 @@ class Transformer:
 		
 		self.model.compile(optimizer, None)
 		self.model.metrics_names.append('ppl')
-		self.model.metrics_tensors.append(self.ppl)
+		self.model.metrics.append(self.ppl)
 		self.model.metrics_names.append('accu')
-		self.model.metrics_tensors.append(self.accu)
+		self.model.metrics.append(self.accu)
 
 	def make_src_seq_matrix(self, input_seqs):
 		if type(input_seqs[0]) == type(''): input_seqs = [input_seqs]
