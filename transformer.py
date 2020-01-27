@@ -44,7 +44,7 @@ class ScaledDotProductAttention():
 
 class MultiHeadAttention():
 	# mode 0 - big martixes, faster; mode 1 - more clear implementation
-	def __init__(self, n_head, d_model, dropout, mode=0):
+	def __init__(self, n_head, d_model, dropout, mode=1):
 		self.mode = mode
 		self.n_head = n_head
 		self.d_k = self.d_v = d_k = d_v = d_model // n_head
