@@ -76,7 +76,7 @@ class MultiHeadAttention():
 			def reshape1(x):
 				s = tf.shape(x)   # [batch_size, len_q, n_head * d_k]
 				x = tf.reshape(x, [s[0], s[1], n_head, s[2]//n_head])
-				x = tf.transpose(x, [2, 0, 1, 3])  
+				x = tf.transpose(x, [2, 0, 1, 3])
 				x = tf.reshape(x, [-1, s[1], s[2]//n_head])  # [n_head * batch_size, len_q, d_k]
 				return x
 			qs = Lambda(reshape1)(qs)
@@ -85,11 +85,11 @@ class MultiHeadAttention():
 
 			if mask is not None:
 				mask = Lambda(lambda x:K.repeat_elements(x, n_head, 0))(mask)
-			head, attn = self.attention(qs, ks, vs, mask=mask)  
-				
+			head, attn = self.attention(qs, ks, vs, mask=mask)
+
 			def reshape2(x):
 				s = tf.shape(x)   # [n_head * batch_size, len_v, d_v]
-				x = tf.reshape(x, [n_head, -1, s[1], s[2]]) 
+				x = tf.reshape(x, [n_head, -1, s[1], s[2]])
 				x = tf.transpose(x, [1, 2, 0, 3])
 				x = tf.reshape(x, [-1, s[1], n_head*d_v])  # [batch_size, len_v, n_head * d_v]
 				return x
@@ -97,9 +97,9 @@ class MultiHeadAttention():
 		elif self.mode == 1:
 			heads = []; attns = []
 			for i in range(n_head):
-				qs = self.qs_layers[i](q)   
-				ks = self.ks_layers[i](k) 
-				vs = self.vs_layers[i](v) 
+				qs = self.qs_layers[i](q)
+				ks = self.ks_layers[i](k)
+				vs = self.vs_layers[i](v)
 				head, attn = self.attention(qs, ks, vs, mask)
 				heads.append(head); attns.append(attn)
 			head = Concatenate()(heads) if n_head > 1 else heads[0]
@@ -116,7 +116,7 @@ class PositionwiseFeedForward():
 		self.layer_norm = LayerNormalization()
 		self.dropout = Dropout(dropout)
 	def __call__(self, x):
-		output = self.w_1(x) 
+		output = self.w_1(x)
 		output = self.w_2(output)
 		output = self.dropout(output)
 		output = Add()([output, x])
@@ -151,8 +151,8 @@ class DecoderLayer():
 
 def GetPosEncodingMatrix(max_len, d_emb):
 	pos_enc = np.array([
-		[pos / np.power(10000, 2 * (j // 2) / d_emb) for j in range(d_emb)] 
-		if pos != 0 else np.zeros(d_emb) 
+		[pos / np.power(10000, 2 * (j // 2) / d_emb) for j in range(d_emb)]
+		if pos != 0 else np.zeros(d_emb)
 			for pos in range(max_len)
 			])
 	pos_enc[1:, 0::2] = np.sin(pos_enc[1:, 0::2]) # dim 2i
@@ -183,7 +183,7 @@ class SelfAttention():
 	def __call__(self, src_emb, src_seq, return_att=False, active_layers=999):
 		if return_att: atts = []
 		mask = Lambda(lambda x:K.cast(K.greater(x, 0), 'float32'))(src_seq)
-		x = src_emb		
+		x = src_emb
 		for enc_layer in self.layers[:active_layers]:
 			x, att = enc_layer(x, mask)
 			if return_att: atts.append(att)
@@ -201,7 +201,7 @@ class Decoder():
 		if return_att: self_atts, enc_atts = [], []
 		for dec_layer in self.layers[:active_layers]:
 			x, self_att, enc_att = dec_layer(x, enc_output, self_mask, enc_mask)
-			if return_att: 
+			if return_att:
 				self_atts.append(self_att)
 				enc_atts.append(enc_att)
 		return (x, self_atts, enc_atts) if return_att else x
@@ -265,7 +265,7 @@ class InferRNN(Layer):
 
 	def compute_output_shape(self, input_shape):
 		return (input_shape[0], input_shape[1], 1) if self.return_sequences else (input_shape[0], 1)
-			
+
 	def __call__(self, inputs, initial_state=None, constants=None, **kwargs):
 		if initial_state is not None:
 			kwargs['initial_state'] = initial_state
@@ -307,7 +307,7 @@ def decode_batch_greedy(src_seq, encode_model, decode_model, start_mark, end_mar
 	for i in range(max_len-1):
 		outputs = decode_model.predict_on_batch([target_one, src_seq, enc_ret] + dec_outputs)
 		new_dec_outputs, output = outputs[:-1], outputs[-1]
-		for dec_output, new_out in zip(dec_outputs, new_dec_outputs): 
+		for dec_output, new_out in zip(dec_outputs, new_dec_outputs):
 			dec_output[:,-1,:] = new_out[:,0,:]
 		dec_outputs = [np.concatenate([x, np.zeros_like(new_out)], axis=1) for x in dec_outputs]
 
@@ -339,7 +339,7 @@ def decode_batch_beam_search(src_seq, topk, encode_model, decode_model, start_ma
 	for i in range(max_len-1):
 		outputs = decode_model.predict_on_batch([target_one, src_seq, enc_ret] + dec_outputs)
 		new_dec_outputs, output = outputs[:-1], outputs[-1]
-		for dec_output, new_out in zip(dec_outputs, new_dec_outputs): 
+		for dec_output, new_out in zip(dec_outputs, new_dec_outputs):
 			dec_output[:,-1,:] = new_out[:,0,:]
 
 		dec_outputs = [np.concatenate([x, np.zeros_like(new_out)], axis=1) for x in dec_outputs]
@@ -359,11 +359,11 @@ def decode_batch_beam_search(src_seq, topk, encode_model, decode_model, start_ma
 				ind = np.argpartition(wprobs, -topk)[-topk:]
 				wsorted = [(k,x) for k,x in zip(ind, wprobs[ind])]
 				#wsorted = sorted(list(enumerate(wprobs)), key=lambda x:x[-1], reverse=True)   # slow
-				for wid, wp in wsorted[:topk]: 
+				for wid, wp in wsorted[:topk]:
 					wprob = decoded_logps[prev]+wp
 					if wprob < bests.get(ii, -1e5) * early_stop_mult: continue
 					cands.append( (prev, wid, wprob) )
-			cands.sort(key=lambda x:x[-1], reverse=True)	
+			cands.sort(key=lambda x:x[-1], reverse=True)
 			cands = cands[:topk]
 			lastks[ii] = len(cands)
 			for kk, zz in enumerate(cands):
@@ -376,7 +376,7 @@ def decode_batch_beam_search(src_seq, topk, encode_model, decode_model, start_ma
 				next_decoded_indexes[npos] = decoded_indexes[prev].copy()
 				next_decoded_indexes[npos].append(wid)
 				if wid == end_mark:
-					final_results.append( (ii, decoded_indexes[prev].copy(), wprob) ) 
+					final_results.append( (ii, decoded_indexes[prev].copy(), wprob) )
 					if ii not in bests or wprob > bests[ii]: bests[ii] = wprob
 		if sum(lastks) == 0: break
 		dec_outputs = next_dec_outputs
@@ -406,7 +406,7 @@ class Transformer:
 		self.emb_dropout = Dropout(dropout)
 
 		self.i_word_emb = Embedding(i_tokens.num(), d_emb)
-		if share_word_emb: 
+		if share_word_emb:
 			assert i_tokens.num() == o_tokens.num()
 			self.o_word_emb = i_word_emb
 		else: self.o_word_emb = Embedding(o_tokens.num(), d_emb)
@@ -426,13 +426,13 @@ class Transformer:
 		src_emb = self.i_word_emb(src_seq)
 		tgt_emb = self.o_word_emb(tgt_seq)
 
-		if self.pos_emb: 
+		if self.pos_emb:
 			src_emb = add_layer([src_emb, self.pos_emb(src_seq)])
 			tgt_emb = add_layer([tgt_emb, self.pos_emb(tgt_seq)])
 		src_emb = self.emb_dropout(src_emb)
 
 		enc_output = self.encoder(src_emb, src_seq, active_layers=active_layers)
-		dec_output = self.decoder(tgt_emb, tgt_seq, src_seq, enc_output, active_layers=active_layers)	
+		dec_output = self.decoder(tgt_emb, tgt_seq, src_seq, enc_output, active_layers=active_layers)
 		final_output = self.target_layer(dec_output)
 
 		def get_loss(y_pred, y_true):
@@ -448,14 +448,14 @@ class Transformer:
 			corr = K.cast(K.equal(K.cast(y_true, 'int32'), K.cast(K.argmax(y_pred, axis=-1), 'int32')), 'float32')
 			corr = K.sum(corr * mask, -1) / K.sum(mask, -1)
 			return K.mean(corr)
-				
+
 		loss = get_loss(final_output, tgt_true)
 		self.ppl = K.exp(loss)
 		self.accu = get_accu(final_output, tgt_true)
 
 		self.model = Model([src_seq_input, tgt_seq_input], final_output)
 		self.model.add_loss([loss])
-		
+
 		self.model.compile(optimizer, None)
 		self.model.metrics_names.append('ppl')
 		self.model.metrics.append(self.ppl)
@@ -472,14 +472,14 @@ class Transformer:
 				src_seq[i,1+ii] = self.i_tokens.id(z)
 			src_seq[i,1+len(seq)] = self.i_tokens.endid()
 		return src_seq
-	
+
 	def make_readout_decode_model(self, max_output_len=32):
 		src_seq_input = Input(shape=(None,), dtype='int32')
 		tgt_start_input = Input(shape=(1,), dtype='int32')
 		src_seq = src_seq_input
 		enc_mask = Lambda(lambda x:K.cast(K.greater(x, 0), 'float32'))(src_seq)
 		src_emb = self.i_word_emb(src_seq)
-		if self.pos_emb: 
+		if self.pos_emb:
 			src_emb = add_layer([src_emb, self.pos_emb(src_seq)])
 
 		src_emb = self.emb_dropout(src_emb)
@@ -488,15 +488,15 @@ class Transformer:
 		tgt_emb = self.o_word_emb(tgt_start_input)
 		tgt_seq = Lambda(lambda x:K.repeat_elements(x, max_output_len, 1))(tgt_start_input)
 		rep_input = Lambda(lambda x:K.repeat_elements(x, max_output_len, 1))(tgt_emb)
-	
+
 		cell = ReadoutDecoderCell(self.o_word_emb, self.pos_emb, self.decoder, self.target_layer)
-		final_output = InferRNN(cell, return_sequences=True)(rep_input, 
+		final_output = InferRNN(cell, return_sequences=True)(rep_input,
 				initial_state=[tgt_start_input, K.ones_like(tgt_start_input), K.zeros_like(tgt_seq)] + \
-						[rep_input for _ in self.decoder.layers], 
+						[rep_input for _ in self.decoder.layers],
 				constants=[enc_output, enc_mask])
 		final_output = Lambda(lambda x:K.squeeze(x, -1))(final_output)
 		self.readout_model = Model([src_seq_input, tgt_start_input], final_output)
-		
+
 	def decode_sequence_readout_x(self, X, batch_size=32, max_output_len=64):
 		if self.readout_model is None: self.make_readout_decode_model(max_output_len)
 		target_seq = np.zeros((X.shape[0], 1), dtype='int32')
@@ -531,7 +531,7 @@ class Transformer:
 		self.encode_model = Model(src_seq_input, enc_output)
 
 		self.decoder_pre_step = DecoderPerStep(self.decoder)
-		
+
 		src_seq_input = Input(shape=(None,), dtype='int32')
 		tgt_one_input = Input(shape=(1,), dtype='int32')
 		enc_ret_input = Input(shape=(None, self.d_model))
@@ -542,12 +542,12 @@ class Transformer:
 		tgt_one = self.o_word_emb(tgt_one_input)
 		if self.pos_emb: tgt_one = add_layer([tgt_one, self.pos_emb(tgt_pos, pos_input=True)])
 
-		dec_outputs = self.decoder_pre_step([tgt_one, src_seq_input, enc_ret_input]+dec_ret_inputs)	
+		dec_outputs = self.decoder_pre_step([tgt_one, src_seq_input, enc_ret_input]+dec_ret_inputs)
 		final_output = self.target_layer(dec_outputs[-1])
 
-		self.decode_model = Model([tgt_one_input, src_seq_input, enc_ret_input]+dec_ret_inputs, 
+		self.decode_model = Model([tgt_one_input, src_seq_input, enc_ret_input]+dec_ret_inputs,
 							dec_outputs[:-1]+[final_output])
-		
+
 
 	def decode_sequence_fast(self, input_seqs, batch_size=32, delimiter='', verbose=0):
 		if self.decode_model is None: self.make_fast_decode_model()
@@ -559,13 +559,13 @@ class Transformer:
 		decode_model = self.decode_model
 
 		decode_batch = lambda x: decode_batch_greedy(x, encode_model, decode_model, start_mark, end_mark, max_len)
-		
+
 		rets = []
 		rng = range(0, src_seq.shape[0], batch_size)
 		if verbose and src_seq.shape[0] > batch_size: rng = tqdm(rng, total=len(rng))
 		for iter in rng:
 			rets.extend( decode_batch(src_seq[iter:iter+batch_size]) )
-			
+
 		rets = [delimiter.join(list(map(self.o_tokens.token, ret))) for ret in rets]
 		if type(input_seqs[0]) is type('') and len(rets) == 1: rets = rets[0]
 		return rets
@@ -581,7 +581,7 @@ class Transformer:
 
 		decode_batch = lambda x: decode_batch_beam_search(x, topk, encode_model, decode_model,
 													start_mark, end_mark, max_len)
-		
+
 		rets = {}
 		rng = range(0, src_seq.shape[0], batch_size)
 		if verbose and src_seq.shape[0] > batch_size: rng = tqdm(rng, total=len(rng))
@@ -595,7 +595,7 @@ class Transformer:
 		rets = [[(delimiter.join(list(map(self.o_tokens.token, x))), y) for x, y in r] for r in rets]
 		if type(input_seqs[0]) is type('') and len(rets) == 1: rets = rets[0]
 		return rets
-	
+
 class PosEncodingLayer:
 	def __init__(self, max_len, d_emb):
 		self.pos_emb_matrix = Embedding(max_len, d_emb, trainable=False, \
@@ -645,9 +645,7 @@ class QANet_ConvBlock:
 class QANet_Block:
 	def __init__(self, dim, n_head, n_conv, kernel_size, dropout=0.1, add_pos=True):
 		self.conv = QANet_ConvBlock(dim, n_conv=n_conv, kernel_size=kernel_size, dropout=dropout)
-		self.self_att = MultiHeadAttention(n_head=n_head, d_model=dim, 
-									 d_k=dim//n_head, d_v=dim//n_head, 
-									 dropout=dropout, use_norm=False)
+		self.self_att = MultiHeadAttention(d_model=dim, n_head=n_head, dropout=dropout, mode=1)
 		self.feed_forward = PositionwiseFeedForward(dim, dim, dropout=dropout)
 		self.norm = LayerNormalization()
 		self.add_pos = add_pos
@@ -667,7 +665,7 @@ class QANet_Encoder:
 		self.dim = dim
 		self.n_block = n_block
 		self.conv_first = SeparableConv1D(dim, 1, padding='same')
-		self.enc_block = QANet_Block(dim, n_head=n_head, n_conv=n_conv, kernel_size=kernel_size, 
+		self.enc_block = QANet_Block(dim, n_head=n_head, n_conv=n_conv, kernel_size=kernel_size,
 								dropout=dropout, add_pos=add_pos)
 	def __call__(self, x, mask):
 		if K.int_shape(x)[-1] != self.dim:
