@@ -1,10 +1,12 @@
 import random, os, sys
 import numpy as np
+from keras import backend as K
 from keras.models import *
 from keras.layers import *
 from keras.callbacks import *
 from keras.initializers import *
 import tensorflow as tf
+tf.compat.v1.disable_eager_execution()
 
 try:
 	from tqdm import tqdm
